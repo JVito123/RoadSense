@@ -199,8 +199,8 @@ pkg install python git termux-api
 
 Ambil kode, lalu masuk ke root repository:
 ```bash
-git clone https://github.com/<username>/<nama-repo>.git
-cd <nama-repo>
+git clone https://github.com/JVito123/RoadSense.git
+cd RoadSense
 pip install -r edge_phone/requirements.txt
 ```
 
@@ -283,7 +283,7 @@ Daftar screenshot dan isinya ada di [`docs/screenshots/`](docs/screenshots/READM
 
 - [`docs/test_scenarios.md`](docs/test_scenarios.md) — skenario uji dan formulir hasil
 - [`docs/demo_script.md`](docs/demo_script.md) — skrip video demo ±3 menit
-- [`docs/ppt_outline.md`](docs/ppt_outline.md) — kerangka presentasi 8 slide
+- [Outline awal PPT (arsip, 8 slide)](docs/ppt_outline.md) — kerangka presentasi 8 slide
 
 ## Pemecahan masalah
 
@@ -338,5 +338,5 @@ File `.gitignore` sudah mengecualikan `.venv/`, `__pycache__/`, `.env`, `*.log`,
 
 ## Tautan
 
-- Presentasi: *ditambahkan setelah final*
+- Presentasi: [RoadSense Lab — PPT Final (PDF, 16 slide)](docs/RoadSense_Lab_Presentasi_IoT.pdf)
 - Video demo: *ditambahkan setelah direkam*

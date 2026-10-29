@@ -119,7 +119,7 @@ Alternatif tanpa Python:
 | | |
 |---|---|
 | Periksa | README berisi perintah yang berhasil dijalankan; presentasi memuat masalah dan ide, arsitektur, sensor, processing dan algoritma, cloud, pengujian, serta link GitHub; video demo memuat disclaimer |
-| **Hasil** | **Belum selesai.** Video belum direkam, PPT masih difinalkan, dan dokumen serta screenshot terbaru belum dipastikan sudah di-push ke GitHub |
+| **Hasil** | **Belum selesai.** Screenshot pengujian T3–T5 sudah tersedia di repository GitHub. PPT final 16 slide sudah tersedia di `docs/RoadSense_Lab_Presentasi_IoT.pdf`. Video demo dan tautannya masih perlu diselesaikan. |
 
 ---
 

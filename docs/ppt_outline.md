@@ -1,4 +1,6 @@
-# RoadSense Lab — Outline PPT (8 slide)
+# RoadSense Lab — Outline Awal PPT (Arsip, 8 Slide)
+
+> **Catatan:** Dokumen ini merupakan rancangan awal presentasi RoadSense Lab yang terdiri dari 8 slide. Presentasi telah dikembangkan menjadi 16 slide. Dokumen ini dipertahankan sebagai arsip perencanaan, bukan versi presentasi final.
 
 > Basis: [`SPEC.md`](../SPEC.md) (1 ponsel Android + 1 laptop). Semua angka pada slide pengujian **harus** berasal dari pengukuran nyata saat uji/demonstrasi — bagian bertanda `[ISI: …]` sengaja dibiarkan kosong. Jangan mengisi dengan angka contoh dari SPEC.
 
