@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>RoadSense Lab Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">RS</div>
+      <div>
+        <h1>RoadSense Lab</h1>
+        <p class="sub">Tabletop IoT prototype · Edge A = Android phone (IMU) · Edge B = laptop (webcam)</p>
+      </div>
+    </div>
+    <div class="conn" id="connPill" data-state="disconnected" role="status" aria-live="polite">
+      <span class="dot" aria-hidden="true"></span><span id="connText">Disconnected</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Connection -->
+    <section class="panel connect-panel" aria-label="Broker connection">
+      <form id="connectForm" class="connect-form" autocomplete="off">
+        <label class="field grow">
+          <span>PROJECT_ID</span>
+          <input id="projectId" name="projectId" required pattern="[a-z0-9\-]{3,64}"
+                 placeholder="roadsense-abc123" spellcheck="false" autocapitalize="off"
+                 title="3–64 characters: lowercase letters, digits, hyphen">
+        </label>
+        <label class="field narrow">
+          <span>Stale after (s)</span>
+          <input id="staleSec" type="number" min="1" max="120" step="1" value="5">
+        </label>
+        <div class="btn-row">
+          <button type="submit" id="connectBtn" class="primary">Connect</button>
+          <button type="button" id="disconnectBtn" class="ghost" disabled>Disconnect</button>
+        </div>
+      </form>
+      <div class="conn-meta">
+        <div><span class="k">Broker</span> <code>wss://broker.hivemq.com:8884/mqtt</code></div>
+        <div><span class="k">Base topic</span> <code id="baseTopic">—</code></div>
+        <div><span class="k">Messages</span> <b id="msgCount">0</b> <span class="k">· Rejected</span> <b id="rejCount">0</b></div>
+      </div>
+      <p class="error" id="connError" hidden></p>
+    </section>
+
+    <p class="disclaimer">
+      <strong>Controlled tabletop simulation.</strong>
+      Edge A only flags vibration patterns; edge B only gives camera motion context.
+      This is <em>not</em> a validated pothole detector, road map, or location-based warning (no GPS).
+      Every value shown here comes from MQTT messages published by the edges — nothing is simulated by this page.
+    </p>
+
+    <!-- Device cards -->
+    <section class="devices" aria-label="Edge devices">
+      <article class="card" id="cardA" data-fresh="none">
+        <header class="card-head">
+          <div class="title">
+            <span class="dev-tag">A</span>
+            <div>
+              <h2>Android phone</h2>
+              <p class="sensor">sensor: <code>imu</code> · accelerometer + gyroscope (Termux:API)</p>
+            </div>
+          </div>
+          <div class="chips">
+            <span class="chip status" id="statusA" data-status="">—</span>
+            <span class="chip fresh" id="freshA" data-fresh="none">No data yet</span>
+          </div>
+        </header>
+        <div class="metrics">
+          <div class="metric"><span class="m-label">Vibration RMS</span><span class="m-val" id="vA_vibration_rms">—</span><span class="m-unit" id="uA_vibration_rms"></span></div>
+          <div class="metric"><span class="m-label">Peak jerk</span><span class="m-val" id="vA_peak_jerk">—</span><span class="m-unit" id="uA_peak_jerk"></span></div>
+          <div class="metric"><span class="m-label">Rotation RMS</span><span class="m-val" id="vA_rotation_rms">—</span><span class="m-unit" id="uA_rotation_rms"></span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartA" role="img" aria-label="Live chart of edge A telemetry, last 60 seconds"></canvas></div>
+        <div class="legend" id="legendA"></div>
+        <dl class="meta">
+          <dt>seq</dt><dd id="seqA">—</dd>
+          <dt>Device time (ts_ms)</dt><dd id="tsA">—</dd>
+          <dt>Last received</dt><dd id="rxA">—</dd>
+          <dt>Missed seq</dt><dd id="gapA">0</dd>
+          <dt>Applied thresholds</dt><dd id="thrA">—</dd>
+        </dl>
+        <details class="raw"><summary>Last raw payload</summary><pre id="rawA">—</pre></details>
+      </article>
+
+      <article class="card" id="cardB" data-fresh="none">
+        <header class="card-head">
+          <div class="title">
+            <span class="dev-tag">B</span>
+            <div>
+              <h2>Laptop webcam</h2>
+              <p class="sensor">sensor: <code>webcam</code> · OpenCV frame difference (numbers only, no images)</p>
+            </div>
+          </div>
+          <div class="chips">
+            <span class="chip status" id="statusB" data-status="">—</span>
+            <span class="chip fresh" id="freshB" data-fresh="none">No data yet</span>
+          </div>
+        </header>
+        <div class="metrics">
+          <div class="metric"><span class="m-label">Motion score</span><span class="m-val" id="vB_motion_score">—</span><span class="m-unit" id="uB_motion_score"></span></div>
+          <div class="metric"><span class="m-label">Motion delta</span><span class="m-val" id="vB_motion_delta">—</span><span class="m-unit" id="uB_motion_delta"></span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="chartB" role="img" aria-label="Live chart of edge B telemetry, last 60 seconds"></canvas></div>
+        <div class="legend" id="legendB"></div>
+        <dl class="meta">
+          <dt>seq</dt><dd id="seqB">—</dd>
+          <dt>Device time (ts_ms)</dt><dd id="tsB">—</dd>
+          <dt>Last received</dt><dd id="rxB">—</dd>
+          <dt>Missed seq</dt><dd id="gapB">0</dd>
+          <dt>Applied thresholds</dt><dd id="thrB">—</dd>
+        </dl>
+        <details class="raw"><summary>Last raw payload</summary><pre id="rawB">—</pre></details>
+      </article>
+    </section>
+
+    <!-- Controls -->
+    <section class="controls" aria-label="Threshold control">
+      <form class="panel control" id="formA" novalidate>
+        <h3>Control → Edge A <span class="muted">(phone)</span></h3>
+        <p class="hint">Publishes <code>SET_THRESHOLD</code> to <code>…/control</code> with <code>"target":"A"</code>. Edge B ignores it.</p>
+        <div class="fields">
+          <label class="field">
+            <span><code>vibration_rms_threshold</code></span>
+            <input name="vibration_rms_threshold" type="number" step="any" min="0.001" max="100" value="0.8" required>
+          </label>
+          <label class="field">
+            <span><code>jerk_peak_threshold</code></span>
+            <input name="jerk_peak_threshold" type="number" step="any" min="0.001" max="10000" value="3.0" required>
+          </label>
+        </div>
+        <button type="submit" class="primary" disabled>Send to A</button>
+        <div class="ack" id="ackA" data-kind="idle" aria-live="polite"></div>
+      </form>
+
+      <form class="panel control" id="formB" novalidate>
+        <h3>Control → Edge B <span class="muted">(laptop)</span></h3>
+        <p class="hint">Publishes <code>SET_THRESHOLD</code> to <code>…/control</code> with <code>"target":"B"</code>. Edge A ignores it.</p>
+        <div class="fields">
+          <label class="field">
+            <span><code>motion_score_threshold</code></span>
+            <input name="motion_score_threshold" type="number" step="any" min="0.001" max="255" value="12.0" required>
+          </label>
+        </div>
+        <button type="submit" class="primary" disabled>Send to B</button>
+        <div class="ack" id="ackB" data-kind="idle" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <!-- Events + log -->
+    <section class="lower">
+      <div class="panel">
+        <header class="panel-head">
+          <h3>Event timeline <span class="count" id="eventCount">0</span></h3>
+          <button type="button" class="ghost small" id="clearEvents">Clear</button>
+        </header>
+        <p class="hint">From <code>…/events</code>. Edges publish only on status change / cooldown.</p>
+        <ol class="timeline" id="events"><li class="empty">No events received yet.</li></ol>
+      </div>
+      <div class="panel">
+        <header class="panel-head">
+          <h3>Activity log</h3>
+          <button type="button" class="ghost small" id="clearLog">Clear</button>
+        </header>
+        <p class="hint">Connection, commands sent, ACKs, status changes, rejected (malformed) messages.</p>
+        <ol class="log" id="log"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>
+      Privacy: this page only receives numeric summaries and sends threshold commands. It never receives,
+      stores or transmits images, video, names or locations. Only the PROJECT_ID is remembered in this browser.
+      The HiveMQ broker is public — anyone who knows the PROJECT_ID can read and publish these topics.
+    </p>
+  </footer>
+
+  <script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
+  <script>window.mqtt || document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5/dist/mqtt.min.js"><\/script>');</script>
+  <script src="app.js"></script>
+</body>
+</html>

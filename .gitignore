@@ -1,0 +1,17 @@
+# Python / local environment
+.venv/
+__pycache__/
+*.py[cod]
+*.pyc
+.pytest_cache/
+# Private configuration / local debugging
+.env
+.env.*
+!.env.example
+*.log
+# Generated media
+*.mp4
+*.mov
+*.avi
+.DS_Store
+Thumbs.db
