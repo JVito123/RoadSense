@@ -42,8 +42,8 @@ Prototipe ini **tidak** dimaksudkan sebagai:
 ## 4. Edge A — pemrosesan IMU
 
 ### 4.1 Akuisisi sensor
-- Nama sensor dicari otomatis dengan `termux-sensor -l`. Sensor yang mengandung kata `accelerometer` dan `gyroscope` dipilih; varian yang mengandung `uncalibrated`, `linear`, `gravity`, `wakeup`, `tilt`, atau `step` diprioritaskan paling akhir.
-- Nama sensor dapat dipaksa melalui variabel lingkungan `ACCEL_SENSOR_NAME` dan `GYRO_SENSOR_NAME`.
+- Nama sensor dicari otomatis dengan `termux-sensor -l`. Sensor yang mengandung kata `accelerometer` dan `gyroscope` dipilih; varian yang mengandung `uncalibrated`, `linear`, `gravity`, `wakeup`, `tilt`, atau `step` diprioritaskan paling akhir. Di antara kandidat dengan prioritas sama, nama terpendek yang dipilih.
+- Nama sensor dapat dipaksa melalui variabel lingkungan `ACCEL_SENSOR_NAME` dan `GYRO_SENSOR_NAME`. Pada ponsel uji, aturan nama terpendek memilih `VDIS Gyroscope`, bukan sensor gyroscope chip IMU `ICM42632M Gyroscope`, sehingga `GYRO_SENSOR_NAME="ICM42632M Gyroscope"` diset manual.
 - Pembacaan berjalan sebagai stream latar belakang `termux-sensor -s <accel>,<gyro> -d <SENSOR_DELAY_MS>` (default 50 ms, minimum 20 ms). Buffer menyimpan maksimum 64 sampel per sensor.
 - Satu jendela berisi semua sampel yang masuk sejak pembacaan sebelumnya, minimal `SAMPLES_PER_WINDOW` (default 8). Bila sampel kurang sampai batas `SENSOR_TIMEOUT_SEC` (default 4 detik), program memakai sampel yang tersedia atau melakukan pembacaan sekali jalan `termux-sensor ... -n <jumlah>`.
 - Timestamp sampel adalah waktu sampel diterima oleh program (`time.time()`), bukan timestamp perangkat keras sensor.

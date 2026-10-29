@@ -14,14 +14,27 @@ Tujuan video: membuktikan **dua edge sensor yang hidup** (ponsel Android = A, la
 - Jangan perlihatkan password WiFi, akun, atau notifikasi pribadi di layar saat merekam.
 
 ## Persiapan (sebelum merekam, ±10 menit)
-1. Pilih satu `PROJECT_ID` (mis. `roadsense-xxxx`) dan pakai **identik** di ponsel, laptop, dan dashboard.
+1. Pakai PROJECT_ID yang **identik** di ponsel, laptop, dan dashboard. PROJECT_ID yang dipakai saat pengujian adalah `roadsense-v29lab`.
 2. Ponsel dan laptop terhubung ke WiFi/hotspot yang sama dan punya internet.
-3. Edge A (Termux, dari root repository): jalankan `python -m edge_phone.main --project-id <ID> --check-once` sekali untuk memastikan sensor terbaca, lalu `python -m edge_phone.main --project-id <ID>`. Pastikan log menampilkan baris `PUB .../edge/A/telemetry`.
-4. Edge B (laptop): jalankan `python edge_laptop/camera_edge.py --project-id <ID> --preview`. Pastikan muncul `[CAM] Webcam open` dan baris `[B] seq=...`.
-5. Dashboard: jalankan `python -m http.server 8000` dari root repository, buka `http://localhost:8000/dashboard/`, isi PROJECT_ID, lalu klik **Connect**. Kedua kartu harus berstatus **Fresh**.
+3. Edge A (Termux, dari root repository):
+   ```bash
+   cd ~/RoadSense
+   export GYRO_SENSOR_NAME="ICM42632M Gyroscope"
+   python -m edge_phone.main --project-id roadsense-v29lab --check-once
+   python -m edge_phone.main --project-id roadsense-v29lab
+   ```
+   `export` wajib diulang setiap kali Termux dibuka ulang. Tanpa itu, program memilih `VDIS Gyroscope` dan status `DEVICE_MOVEMENT` mungkin tidak muncul. Pastikan log menampilkan baris `PUB .../edge/A/telemetry` dan nilai `rotation_rms` tidak selalu 0 saat ponsel digerakkan.
+4. Edge B (laptop, PowerShell):
+   ```powershell
+   .\.venv\Scripts\python.exe edge_laptop/camera_edge.py --project-id roadsense-v29lab --preview
+   ```
+   Pastikan muncul `[CAM] Webcam open`, `[MQTT] connect reason: ...`, dan baris `[B] seq=...`.
+5. Dashboard: jalankan `.\.venv\Scripts\python.exe -m http.server 8000 --bind 127.0.0.1` dari root repository, buka `http://localhost:8000/dashboard/`, isi PROJECT_ID, lalu klik **Connect**. Kedua kartu harus berstatus **Fresh**.
 6. Posisikan webcam **stabil** (tidak dipegang), melihat meja tempat ponsel berada.
-7. Coba sekali urutan demo untuk mengetahui ambang yang pas; catat nilai baseline yang **terlihat** (bukan ditebak).
-8. Siapkan perekam layar + kamera kedua/ponsel lain untuk merekam perangkat fisik (atau gunakan picture-in-picture).
+7. **Atur ambang setelah semua program berjalan.** Ambang dari dashboard hilang setiap kali edge dijalankan ulang. Kirim ulang ambang yang sudah terbukti di pengujian (A: `vibration_rms_threshold` 1,0 dan `jerk_peak_threshold` 4,0; B: `motion_score_threshold` 5,0 atau 1,5), lalu tunggu kotak ACK hijau. Jika muncul *No ACK*, kirim ulang.
+8. Biarkan ponsel diam 10–20 detik dan pastikan status A tetap `NORMAL`. Jika `BUMP_SUSPECTED` muncul sendiri karena `peak_jerk` melonjak, naikkan `jerk_peak_threshold` sampai kondisi diam stabil `NORMAL`. Catat nilai yang **terlihat**, jangan ditebak.
+9. Agar garis getaran tidak tertekan oleh lonjakan jerk di grafik edge A, klik legend **Peak jerk** untuk menyembunyikannya sementara.
+10. Siapkan perekam layar + kamera kedua/ponsel lain untuk merekam perangkat fisik (atau gunakan picture-in-picture).
 
 ## Alur & Narasi
 

@@ -71,26 +71,31 @@ Semua topic berada di bawah `roadsense/{PROJECT_ID}/`. Setiap perangkat terhubun
 
 ## Status implementasi dan pengujian
 
-| Fitur | Diimplementasikan | Diuji otomatis | Butuh uji fisik |
+Semua fitur di bawah ini sudah diimplementasikan. Pengujian fisik dilakukan pada 29 Oktober 2026 di atas meja, memakai satu ponsel Android (edge A), satu laptop Windows dengan webcam (edge B), broker HiveMQ publik, dan PROJECT_ID `roadsense-v29lab`.
+
+| Fitur | Unit test | Uji fisik (tabletop) | Bukti |
 |---|---|---|---|
-| Penemuan sensor accelerometer/gyroscope (`termux-sensor -l`) | ✓ | ✓ dengan mock | ✓ |
-| Vibration RMS, peak jerk, rotation RMS | ✓ | ✓ dengan data sintetis | ✓ |
-| Klasifikasi status & cooldown event edge A | ✓ | ✓ | ✓ |
-| Kontrol `SET_THRESHOLD` dan ACK edge A | ✓ | ✓ (fungsi parser) | ✓ melalui broker |
-| Nama topic edge A | ✓ | ✓ | — |
-| Frame differencing dan klasifikasi edge B | ✓ | — | ✓ |
-| Kontrol dan ACK edge B | ✓ | — | ✓ |
-| Koneksi MQTT/TLS ke HiveMQ (A, B, tools) | ✓ | — | ✓ |
-| Dashboard (koneksi WSS, validasi, grafik, kontrol, ACK) | ✓ | — | ✓ |
-| Event lintas perangkat (A → log B, B → log A) | ✓ | — | ✓ |
-| Reconnect otomatis setelah koneksi terputus | mengandalkan paho-mqtt / MQTT.js | — | ✓ |
+| Pembacaan accelerometer dan gyroscope via Termux:API | ✓ dengan mock | ✓ | [t4_event_b_ke_a.jpeg](docs/screenshots/t4_event_b_ke_a.jpeg), [t3_dashboard_both_fresh.png](docs/screenshots/t3_dashboard_both_fresh.png) |
+| Vibration RMS, peak jerk, rotation RMS | ✓ dengan data sintetis | ✓ nilai nyata terkirim (belum dikalibrasi) | sama seperti di atas |
+| Klasifikasi status dan cooldown event edge A | ✓ | ✓ `NORMAL`, `BUMP_SUSPECTED`, `DEVICE_MOVEMENT` teramati | [t3_dashboard_both_fresh.png](docs/screenshots/t3_dashboard_both_fresh.png), [t4_event_a_ke_b.png](docs/screenshots/t4_event_a_ke_b.png) |
+| Frame differencing dan klasifikasi edge B | — | ✓ `NORMAL` dan `MOTION_OBSERVED` teramati | [t4_event_a_ke_b.png](docs/screenshots/t4_event_a_ke_b.png) |
+| Telemetri A dan B melalui MQTT/TLS ke HiveMQ | — | ✓ | [t3_dashboard_both_fresh.png](docs/screenshots/t3_dashboard_both_fresh.png) |
+| Dashboard (koneksi WSS, kartu Fresh, grafik) | — | ✓ | [t3_dashboard_both_fresh.png](docs/screenshots/t3_dashboard_both_fresh.png) |
+| `SET_THRESHOLD` dan ACK edge A | ✓ (fungsi parser) | ✓ | [t5_edge_a_ack.png](docs/screenshots/t5_edge_a_ack.png) |
+| `SET_THRESHOLD` dan ACK edge B | — | ✓ | [t5_edge_b_ack.png](docs/screenshots/t5_edge_b_ack.png) |
+| Event A → B dan B → A | — | ✓ | [t4_event_a_ke_b.png](docs/screenshots/t4_event_a_ke_b.png), [t4_event_b_ke_a.jpeg](docs/screenshots/t4_event_b_ke_a.jpeg) |
+| Nama topic edge A | ✓ | ✓ terlihat di log edge A | [t4_event_b_ke_a.jpeg](docs/screenshots/t4_event_b_ke_a.jpeg) |
+| Event di *Event timeline* dashboard | — | belum ada screenshot | — |
+| Rotasi terkontrol → `DEVICE_MOVEMENT` | ✓ (data sintetis) | sebagian: event muncul di log B, tetapi uji rotasi terkontrol belum didokumentasikan | [t4_event_a_ke_b.png](docs/screenshots/t4_event_a_ke_b.png) |
+| Deteksi *Stale*, ACK timeout, ambang B di luar rentang, payload tidak valid | — | belum diuji | — |
+| Reconnect otomatis setelah koneksi terputus | — | belum diuji | — |
+| `tools/send_control.py` | — | belum ada bukti | — |
 
-Hasil yang sudah terverifikasi:
-- 10 unit test di `tests/test_edge_phone.py` lulus (`python -m unittest discover -s tests -v`) pada Python 3.13 di Linux, yaitu mesin review dan **bukan** perangkat Android.
-- Opsi `--help` pada keempat program Python berjalan tanpa galat.
-- `dashboard/app.js` lolos pemeriksaan sintaks `node --check`.
+Pemeriksaan otomatis lain:
+- 10 unit test di `tests/test_edge_phone.py` lulus (`python -m unittest discover -s tests -v`) pada Python 3.13 di Linux. Unit test ini belum dijalankan di perangkat Android.
+- Opsi `--help` pada keempat program Python berjalan tanpa galat, dan `dashboard/app.js` lolos pemeriksaan sintaks `node --check`.
 
-Belum ada hasil pengujian dengan perangkat fisik maupun broker cloud yang tercatat di repository ini. Lihat [Hasil pengujian](#hasil-pengujian).
+Rincian hasil ada di [Hasil pengujian](#hasil-pengujian) dan [`docs/test_scenarios.md`](docs/test_scenarios.md).
 
 ## Prasyarat
 
@@ -170,8 +175,10 @@ Tanpa `--preview`, hentikan program dengan Ctrl+C. Log edge B menampilkan `seq`,
 ### 6. Buka dashboard (terminal 3)
 
 ```bash
-python -m http.server 8000
+python -m http.server 8000 --bind 127.0.0.1
 ```
+
+Opsi `--bind 127.0.0.1` membatasi server agar hanya bisa diakses dari laptop itu sendiri, sehingga isi folder repository tidak terbuka ke perangkat lain di jaringan. Perintah ini yang dipakai saat pengujian. Dashboard tetap terhubung ke broker cloud melalui WSS.
 
 Buka <http://localhost:8000/dashboard/>, isi PROJECT_ID, lalu klik **Connect**. Kolom PROJECT_ID juga dapat diisi otomatis melalui <http://localhost:8000/dashboard/?project=roadsense-v29lab>.
 
@@ -206,6 +213,13 @@ python -m edge_phone.main --project-id roadsense-v29lab                # publish
 ```
 
 > Jalankan sebagai modul (`python -m edge_phone.main`) dari root repository. Perintah `python edge_phone/main.py` akan gagal karena paket memakai import `from edge_phone...`.
+
+**Periksa gyroscope yang dipilih.** Jika ada beberapa sensor dengan kata `gyroscope`, program memilih nama terpendek yang tidak mengandung kata seperti `uncalibrated` atau `wakeup`. Pada ponsel uji, cara ini memilih `VDIS Gyroscope`, padahal yang dibutuhkan adalah gyroscope dari chip IMU, `ICM42632M Gyroscope`. Karena itu nama sensor diset manual sebelum menjalankan edge A:
+```bash
+export GYRO_SENSOR_NAME="ICM42632M Gyroscope"   # sesuaikan dengan nama di output termux-sensor -l
+python -m edge_phone.main --project-id roadsense-v29lab --list-sensors
+```
+`export` hanya berlaku untuk sesi Termux yang sedang terbuka. Ulangi perintah ini setiap kali Termux dibuka ulang. Jika tidak diulang, `rotation_rms` bisa tetap 0 dan status `DEVICE_MOVEMENT` tidak akan muncul.
 
 Opsi tambahan: `--log-level DEBUG|INFO|WARNING|ERROR`.
 
@@ -245,17 +259,25 @@ Contoh payload, aturan event, dan validasi lengkap tercantum di [`SPEC.md` §6](
 
 ## Hasil pengujian
 
-Bagian ini sengaja belum diisi. Isi hanya dengan hasil pengujian nyata sesuai prosedur di [`docs/test_scenarios.md`](docs/test_scenarios.md).
+Pengujian fisik dilakukan pada 29 Oktober 2026 dalam simulasi di atas meja dengan PROJECT_ID `roadsense-v29lab`. Hasil di bawah adalah pengamatan dari satu sesi uji fungsional, bukan pengukuran akurasi. Prosedur dan rincian setiap uji ada di [`docs/test_scenarios.md`](docs/test_scenarios.md).
 
-| Uji | Hasil | Bukti |
-|---|---|---|
-| T1 Sensor nyata A & B | *belum diuji* | `docs/screenshots/t1_*.png` |
-| T2 Telemetri terpisah melalui cloud | *belum diuji* | `docs/screenshots/t2_*.png` |
-| T3 Dashboard menampilkan A & B | *belum diuji* | `docs/screenshots/t3_*.png` |
-| T4 Event A sampai ke dashboard & log B | *belum diuji* | `docs/screenshots/t4_*.png` |
-| T5 Kontrol → ACK → ambang berubah | *belum diuji* | `docs/screenshots/t5_*.png` |
+| Uji | Hasil | Yang teramati | Bukti |
+|---|---|---|---|
+| T1 Sensor nyata A & B | Lulus | Edge A mengirim nilai dari accelerometer dan gyroscope ponsel, termasuk `rotation_rms` 0,24 rad/s. Edge B menghitung `score`, `peak`, dan `delta` dari webcam setiap ±1 detik. | [t4_event_b_ke_a.jpeg](docs/screenshots/t4_event_b_ke_a.jpeg), [t4_event_a_ke_b.png](docs/screenshots/t4_event_a_ke_b.png) |
+| T2 Telemetri terpisah melalui cloud | Lulus | Edge A mempublikasikan ke `roadsense/roadsense-v29lab/edge/A/telemetry`; telemetri A dan B diterima bersamaan oleh dashboard melalui HiveMQ. | [t4_event_b_ke_a.jpeg](docs/screenshots/t4_event_b_ke_a.jpeg), [t3_dashboard_both_fresh.png](docs/screenshots/t3_dashboard_both_fresh.png) |
+| T3 Dashboard menampilkan A & B | Lulus | Status *Connected*, kartu A dan B *Fresh*, grafik real-time tampil, `Messages 80 · Rejected 0`. | [t3_dashboard_both_fresh.png](docs/screenshots/t3_dashboard_both_fresh.png) |
+| T4 Event lintas perangkat | Lulus | Log edge B: `[SHARED EVENT] from edge A: BUMP_SUSPECTED`. Log edge A: `[CROSS-EDGE EVENT from B] type=MOTION_OBSERVED severity=INFO`. | [t4_event_a_ke_b.png](docs/screenshots/t4_event_a_ke_b.png), [t4_event_b_ke_a.jpeg](docs/screenshots/t4_event_b_ke_a.jpeg) |
+| T5 Kontrol dua arah dan ACK | Lulus | Edge A menerapkan `vibration_rms_threshold` = 1,0 dan `jerk_peak_threshold` = 4,0 (round trip 1786 ms). Edge B menerapkan `motion_score_threshold` = 5,0 (round trip 1173 ms). | [t5_edge_a_ack.png](docs/screenshots/t5_edge_a_ack.png), [t5_edge_b_ack.png](docs/screenshots/t5_edge_b_ack.png) |
 
-Screenshot disimpan di [`docs/screenshots/`](docs/screenshots/README.md).
+![Dashboard saat pengujian: kedua edge Fresh](docs/screenshots/t3_dashboard_both_fresh.png)
+
+Catatan dari pengujian:
+- Satu percobaan pertama mengirim perintah ke edge B sempat berakhir dengan *No ACK within 10 s*, lalu berhasil saat diulang. Pengiriman perintah tidak dijamin selalu berhasil pada percobaan pertama.
+- `peak_jerk` jauh lebih sensitif daripada `vibration_rms`. Contohnya, log edge A mencatat `vibration_rms` 0,17 dan `peak_jerk` 31,19 dengan status `BUMP_SUSPECTED`. Penyebab yang paling mungkin: Δt dihitung dari waktu sampel diterima program (minimum 5 ms), sehingga sampel yang datang berdekatan memperbesar nilai jerk.
+- Status `MOTION_OBSERVED` dapat muncul walaupun `score` rata-rata rendah, karena edge B memakai nilai puncak jendela. Contohnya, di log B tercatat `score=2.90 peak=6.46 ... MOTION_OBSERVED`.
+- Uji yang belum dilakukan: rotasi terkontrol, deteksi *Stale*, ACK timeout dengan edge dimatikan, nilai ambang di luar rentang, payload tidak valid, dan reconnect jaringan.
+
+Daftar screenshot dan isinya ada di [`docs/screenshots/`](docs/screenshots/README.md).
 
 ## Dokumen pendukung
 
@@ -273,7 +295,9 @@ Screenshot disimpan di [`docs/screenshots/`](docs/screenshots/README.md).
 | `Camera could not be opened` | Kamera sedang dipakai aplikasi lain atau indeks kamera salah | Tutup aplikasi lain, lalu coba `--camera 1` |
 | Kartu dashboard tetap *No data* / *Stale* | PROJECT_ID berbeda, atau edge berhenti | Samakan PROJECT_ID dan periksa log edge serta `tools/monitor.py` |
 | Penghitung *Rejected* bertambah | Payload tidak sesuai kontrak | Baca alasannya di *Activity log* |
-| *No ACK within 10 s* | Edge tidak berjalan, PROJECT_ID berbeda, atau nilai ambang tidak valid | Periksa log edge; untuk B, gunakan nilai 0,1–150 |
+| *No ACK within 10 s* | Edge belum tersambung ke broker, edge tidak berjalan, PROJECT_ID berbeda, atau nilai ambang tidak valid | Tunggu sampai log edge B menampilkan `[MQTT] connect reason:` sebelum mengirim, lalu kirim ulang. Untuk B, gunakan nilai 0,1–150 |
+| `rotation_rms` selalu 0 dan `DEVICE_MOVEMENT` tidak pernah muncul | Gyroscope yang terpilih otomatis bukan sensor yang diinginkan, atau ponsel tidak punya gyroscope | Jalankan `termux-sensor -l`, lalu set `export GYRO_SENSOR_NAME="<nama gyroscope chip IMU>"` di sesi Termux yang sama |
+| `BUMP_SUSPECTED` muncul padahal ponsel diam | `peak_jerk` melonjak karena jitter waktu sampel | Naikkan `jerk_peak_threshold` dari dashboard sampai status diam kembali `NORMAL` |
 | Status B `MOTION_OBSERVED` padahal grafik di bawah garis ambang | B mengklasifikasi berdasarkan nilai **puncak** jendela, sedangkan grafik menampilkan nilai **rata-rata** | Perilaku ini sesuai implementasi; lihat [`SPEC.md` §5.2](SPEC.md#52-agregasi-dan-klasifikasi-per-jendela-1-detik) |
 | Dashboard: "MQTT.js did not load" | CDN tidak dapat diakses | Periksa koneksi internet, lalu muat ulang halaman |
 
@@ -288,7 +312,9 @@ Screenshot disimpan di [`docs/screenshots/`](docs/screenshots/README.md).
 
 - Pengujian dirancang untuk skenario meja; belum ada uji di kendaraan atau di jalan.
 - Ambang default (A: 0,8 m/s², 3,0 m/s³, rotasi 0,8 rad/s; B: 12,0) dipilih manual dan belum dikalibrasi. Tidak ada klaim akurasi.
-- Laju sampling Termux:API terbatas dan tidak selalu stabil, sehingga `peak_jerk` bersifat perkiraan.
+- Laju sampling Termux:API terbatas dan tidak selalu stabil, sehingga `peak_jerk` bersifat perkiraan. Dalam pengujian, nilainya bisa mencapai puluhan m/s³ walaupun `vibration_rms` rendah, sehingga ambang jerk perlu dinaikkan agar tidak terlalu sering memicu `BUMP_SUSPECTED`.
+- Ambang yang diubah lewat dashboard hanya tersimpan di memori. Saat edge dijalankan ulang, ambang kembali ke nilai awal: variabel lingkungan atau default untuk A, dan `--threshold` untuk B.
+- Pemilihan gyroscope otomatis dapat memilih sensor yang tidak diinginkan jika ponsel memiliki beberapa sensor bernama *gyroscope*. Pada ponsel uji, nama sensor perlu diset manual dengan `GYRO_SENSOR_NAME`.
 - Offset kalibrasi accelerometer dapat membuat `vibration_rms` tidak nol saat ponsel diam.
 - Tanpa gyroscope, `rotation_rms` bernilai 0 dan status `DEVICE_MOVEMENT` tidak dapat muncul.
 - `motion_score` sensitif terhadap cahaya dan bukan inspeksi kondisi jalan.
